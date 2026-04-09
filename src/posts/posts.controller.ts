@@ -3,20 +3,27 @@ import {
   Get,
   Post,
   Delete,
+  Inject,
   Body,
   Param,
   Query,
   ParseIntPipe,
   UseGuards,
   DefaultValuePipe,
+  UseInterceptors,
 } from '@nestjs/common';
+import {
+  CacheInterceptor,
+  CacheTTL,
+  CACHE_MANAGER,
+} from '@nestjs/cache-manager';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ParseSortOrderPipe } from 'src/common/pipes/parse-sort-order-pipe';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ParseSortOrderPipe } from '../common/pipes/parse-sort-order-pipe';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -24,6 +31,8 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
+  // @UseInterceptors(CacheInterceptor)
+  // @CacheTTL(30000) // 30 secondes spécifiquement pour cette route
   @ApiOperation({ summary: 'Lister les posts avec pagination' })
   findAll(
     @Query() paginationDto: PaginationDto,
@@ -33,6 +42,13 @@ export class PostsController {
     order?: 'asc' | 'desc',
   ) {
     return this.postsService.findAll(paginationDto, { authorId, topic, order });
+  }
+  @Get('populars')
+  // @UseInterceptors(CacheInterceptor)
+  // @CacheTTL(30000) // 30 secondes spécifiquement pour cette route
+  @ApiOperation({ summary: 'Lister les posts populaires' })
+  findPopulars() {
+    return this.postsService.findPopulars();
   }
 
   @Get(':id')

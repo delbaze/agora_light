@@ -7,9 +7,15 @@ import * as Joi from 'joi';
 import { PostsModule } from './posts/posts.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60000,
+      max: 200,
+    }),
     ConfigModule.forRoot({
       // envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
       isGlobal: true,

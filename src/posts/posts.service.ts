@@ -4,17 +4,41 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Post, Prisma } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreatePostDto } from './dto/create-post.dto';
+import type { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class PostsService {
   private readonly logger = new Logger(PostsService.name);
+  private cacheKey = 'posts:populars';
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cache: Cache,
+  ) {}
+
+  async findPopulars() {
+    const cached = await this.cache.get<Post[]>(this.cacheKey); // ici je récupère, s'il y en a, les posts populaires en cache
+    if (cached) {
+      this.logger.debug('Post populaires servis depuis le cache');
+      return cached;
+    }
+
+    const posts = await this.prisma.post.findMany({
+      where: { published: true },
+      orderBy: { comments: { _count: 'desc' } },
+      take: 30,
+      include: { author: { select: { id: true, name: true } } },
+    });
+    await this.cache.set(this.cacheKey, posts, 300000);
+    return posts;
+  }
 
   async findAll(
     paginationDto: PaginationDto,
@@ -80,12 +104,15 @@ export class PostsService {
   }
 
   async create(dto: CreatePostDto, authorId: number) {
-    return this.prisma.post.create({
+    const post = await this.prisma.post.create({
       data: { ...dto, authorId },
       include: {
         author: { select: { id: true, name: true } },
       },
     });
+    await this.cache.del(this.cacheKey);
+
+    return post;
   }
 
   async remove(id: number, requesterId: number) {

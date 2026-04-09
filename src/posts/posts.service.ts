@@ -38,7 +38,7 @@ export class PostsService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: filters.order ?? 'desc' },
+        orderBy: { createdAt: filters.order! },
         include: {
           author: { select: { id: true, name: true } },
           _count: { select: { comments: true } },

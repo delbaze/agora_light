@@ -7,12 +7,16 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  UseGuards,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ParseSortOrderPipe } from 'src/common/pipes/parse-sort-order-pipe';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -25,6 +29,7 @@ export class PostsController {
     @Query() paginationDto: PaginationDto,
     @Query('authorId', new ParseIntPipe({ optional: true })) authorId?: number,
     @Query('topic') topic?: string,
+    @Query('order', new DefaultValuePipe('desc'), new ParseSortOrderPipe())
     order?: 'asc' | 'desc',
   ) {
     return this.postsService.findAll(paginationDto, { authorId, topic, order });
@@ -37,6 +42,7 @@ export class PostsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Créer un post' })
   create(@Body() dto: CreatePostDto, @CurrentUser() user: { id: number }) {

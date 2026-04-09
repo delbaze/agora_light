@@ -15,9 +15,9 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // supprime silencieusement tous les champs qui ne sont pas déclarés dans le DTO
+      forbidNonWhitelisted: true, // au lieu de supprimer il retourne une erreur 400 (property [...] should not exist)
+      transform: true, // transforme les données brutes en instances du type déclaré
     }),
   );
 

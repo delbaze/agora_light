@@ -22,3 +22,5 @@ export class PrismaService
     await this.$disconnect();
   }
 }
+
+// A worker process has failed to exit gracefully

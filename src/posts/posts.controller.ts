@@ -44,6 +44,7 @@ export class PostsController {
     return this.postsService.findAll(paginationDto, { authorId, topic, order });
   }
   @Get('populars')
+  // ici c'est manuel depuis le service
   // @UseInterceptors(CacheInterceptor)
   // @CacheTTL(30000) // 30 secondes spécifiquement pour cette route
   @ApiOperation({ summary: 'Lister les posts populaires' })

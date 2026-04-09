@@ -12,6 +12,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { NotificationsProducer } from '../notifications/notifications.producer';
 
 @Injectable()
 export class PostsService {
@@ -21,6 +22,7 @@ export class PostsService {
   constructor(
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cache: Cache,
+    private notificationsProducer: NotificationsProducer,
   ) {}
 
   async findPopulars() {
@@ -111,6 +113,12 @@ export class PostsService {
       },
     });
     await this.cache.del(this.cacheKey);
+
+    await this.notificationsProducer.notifyNewComment(
+      authorId,
+      post.id,
+      `Votre post ${post.title} a été publié`,
+    );
 
     return post;
   }

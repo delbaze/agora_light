@@ -31,8 +31,8 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
-  // @UseInterceptors(CacheInterceptor)
-  // @CacheTTL(30000) // 30 secondes spécifiquement pour cette route
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30000) // 30 secondes spécifiquement pour cette route
   @ApiOperation({ summary: 'Lister les posts avec pagination' })
   findAll(
     @Query() paginationDto: PaginationDto,

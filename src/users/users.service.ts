@@ -4,17 +4,23 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cache: Cache,
+  ) {}
 
   async create(data: { name: string; email: string; password: string }) {
     this.logger.debug(`Tentative de création d'un utilisateur : ${data.email}`);
@@ -56,12 +62,22 @@ export class UsersService {
   }
 
   async findOne(id: number) {
+    const cacheKey = `user:${id}`;
+    const cached = await this.cache.get(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache HIT — ${cacheKey}`);
+      return cached;
+    }
+
+    this.logger.debug(`Cache MISS — ${cacheKey}`);
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException(`Utilisateur ${id} introuvable`);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
+    await this.cache.set(cacheKey, result, 300000);
+
     return result;
   }
 
@@ -75,6 +91,10 @@ export class UsersService {
   ) {
     await this.findOne(id); // Vérifie l'existence, lève NotFoundException si absent
     const user = await this.prisma.user.update({ where: { id }, data });
+
+    await this.cache.del(`user:${id}`);
+    this.logger.debug(`Cache invalidé — user:${id}`);
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
     return result;
@@ -83,6 +103,10 @@ export class UsersService {
   async remove(id: number) {
     await this.findOne(id);
     await this.prisma.user.delete({ where: { id } });
+
+    await this.cache.del(`user:${id}`);
+    this.logger.debug(`Cache invalidé — user:${id}`);
+
     return { message: `Utilisateur ${id} supprimé` };
   }
 

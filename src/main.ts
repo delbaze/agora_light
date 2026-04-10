@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -14,7 +14,10 @@ async function bootstrap() {
         ? ['log', 'warn', 'error']
         : ['log', 'warn', 'error', 'debug', 'verbose'],
   });
-
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1', // @Version()
+  });
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(
     new LoggingInterceptor(),

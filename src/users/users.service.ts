@@ -136,7 +136,7 @@ export class UsersService {
     ]);
 
     return {
-      data: users,
+      users,
       meta: {
         total,
         page,

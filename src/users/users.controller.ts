@@ -9,6 +9,8 @@ import {
   Patch,
   UseGuards,
   Delete,
+  Version,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -21,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiTags('Utilisateurs') // Groupe toutes les routes sous ce label
 @Controller('users')
@@ -38,7 +41,14 @@ export class UsersController {
 
   @Get()
   async findAll() {
+    console.log('JE SUIS DANS LA VERSION 1');
     return this.usersService.findAll();
+  }
+  @Get()
+  @Version('2')
+  async findAllv2(@Query() paginationDto: PaginationDto) {
+    console.log('JE SUIS DANS LA VERSION 2');
+    return this.usersService.findAllPaginated(paginationDto);
   }
 
   @Get(':id')

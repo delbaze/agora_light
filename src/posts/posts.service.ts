@@ -14,6 +14,7 @@ import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { NotificationsProducer } from '../notifications/notifications.producer';
 import { unlink } from 'fs/promises';
+import { Role } from '../common/decorators/roles.decorator';
 
 @Injectable()
 export class PostsService {
@@ -124,9 +125,12 @@ export class PostsService {
     return post;
   }
 
-  async remove(id: number, requesterId: number) {
+  async remove(id: number, requesterId: number, requesterRole: Role) {
     const post = await this.findOne(id);
-    if (post.authorId !== requesterId) {
+    const isAuthor = post.authorId === requesterId;
+    const isAdminOrModerator =
+      requesterRole === Role.Admin || requesterRole === Role.Moderator;
+    if (!isAuthor && !isAdminOrModerator) {
       throw new ForbiddenException('Vous ne pouvez pas supprimer ce post');
     }
     return this.prisma.post.delete({ where: { id } });

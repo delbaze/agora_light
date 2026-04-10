@@ -29,6 +29,8 @@ import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Parser } from 'json2csv';
 import { Throttle } from '@nestjs/throttler';
+import { Role, Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
@@ -128,12 +130,14 @@ export class PostsController {
 
   @Delete(':id')
   @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles()
   @ApiOperation({ summary: 'Supprimer un post' })
   remove(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { id: number },
+    @CurrentUser() user: { id: number; role: Role },
   ) {
-    return this.postsService.remove(id, user.id);
+    return this.postsService.remove(id, user.id, user.role);
   }
 
   @Post(':id/attachments')

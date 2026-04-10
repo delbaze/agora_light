@@ -10,6 +10,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
@@ -21,6 +27,7 @@ model User {
   updatedAt DateTime  @updatedAt
   posts     Post[]
   comments  Comment[]
+  role      Role      @default(USER)
   following Follow[]  @relation("Follower")
   followers Follow[]  @relation("Following")
 }

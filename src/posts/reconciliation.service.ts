@@ -1,15 +1,22 @@
 // src/posts/reconciliation.service.ts — job de nettoyage des fichiers orphelins
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Cron, Interval, Timeout, CronExpression } from '@nestjs/schedule';
 import { readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 
 @Injectable()
-export class ReconciliationService {
+export class ReconciliationService implements OnModuleInit {
   private readonly logger = new Logger(ReconciliationService.name);
 
+  async onModuleInit() {
+    await this.reconcileOrphanFiles();
+  }
   constructor(private prisma: PrismaService) {}
 
+  @Cron(CronExpression.EVERY_10_SECONDS) // quand on utilise une expression toute faite
+  //   @Interval(60000) // toutes les 60 secondes
+  //   @Timeout(5000) // 5 secondes après le démarrage
   async reconcileOrphanFiles() {
     this.logger.log('Démarrage de la réconciliation des fichiers orphelins');
 

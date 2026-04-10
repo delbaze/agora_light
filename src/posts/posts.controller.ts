@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   BadRequestException,
   Version,
+  Res,
 } from '@nestjs/common';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -25,7 +26,8 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { UploadedFiles } from '@nestjs/common';
 import { multerConfig } from '../common/config/multer.config';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
-
+import type { Response } from 'express';
+import { Parser } from 'json2csv';
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
@@ -51,6 +53,27 @@ export class PostsController {
   @ApiOperation({ summary: 'Lister les posts populaires' })
   findPopulars() {
     return this.postsService.findPopulars();
+  }
+
+  @Get('export')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Exporter les posts en CSV' })
+  async exportCsv(@Res() res: Response) {
+    const posts = await this.postsService.findAllForExport();
+    const fields = [
+      { label: 'ID', value: 'id' },
+      { label: 'Titre', value: 'title' },
+      { label: 'Auteur', value: 'author.name' },
+      { label: 'Topic', value: 'topic' },
+      { label: 'Commentaires', value: '_count.comments' },
+      { label: 'Date de création', value: 'createdAt' },
+    ];
+    const parser = new Parser({ fields });
+    const csv = parser.parse(posts);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="posts.csv"');
+    res.send('\uFEFF' + csv);
   }
 
   @Get(':id')

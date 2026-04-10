@@ -132,6 +132,17 @@ export class PostsService {
     return this.prisma.post.delete({ where: { id } });
   }
 
+  async findAllForExport() {
+    return this.prisma.post.findMany({
+      where: { published: true },
+      include: {
+        author: { select: { id: true, name: true } },
+        _count: { select: { comments: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private async createAttachments(
     tx: Prisma.TransactionClient,
     postId: number,

@@ -13,6 +13,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { NotificationsProducer } from '../notifications/notifications.producer';
+import { unlink } from 'fs/promises';
 
 @Injectable()
 export class PostsService {
@@ -129,5 +130,88 @@ export class PostsService {
       throw new ForbiddenException('Vous ne pouvez pas supprimer ce post');
     }
     return this.prisma.post.delete({ where: { id } });
+  }
+
+  private async createAttachments(
+    tx: Prisma.TransactionClient,
+    postId: number,
+    files: Express.Multer.File[],
+  ) {
+    if (files.length === 0) return;
+
+    await tx.postAttachment.createMany({
+      data: files.map((file) => ({
+        filename: file.filename,
+        url: `/uploads/${file.filename}`,
+        mimetype: file.mimetype,
+        size: file.size,
+        postId,
+      })),
+    });
+  }
+  async createWithAttachments(
+    dto: CreatePostDto,
+    authorId: number,
+    files: Express.Multer.File[],
+  ) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const post = await tx.post.create({
+          data: { ...dto, authorId },
+          include: { author: { select: { id: true, name: true } } },
+        });
+
+        await this.createAttachments(tx, post.id, files);
+
+        return tx.post.findUnique({
+          where: { id: post.id },
+          include: {
+            author: { select: { id: true, name: true } },
+            attachments: true,
+          },
+        });
+      });
+    } catch (error) {
+      await this.cleanupFiles(files);
+      throw error;
+    }
+  }
+
+  async addAttachments(
+    postId: number,
+    requesterId: number,
+    files: Express.Multer.File[],
+  ) {
+    const post = await this.findOne(postId);
+    if (post.authorId !== requesterId) {
+      throw new ForbiddenException('Vous ne pouvez pas modifier ce post');
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await this.createAttachments(tx, postId, files);
+
+        return tx.post.findUnique({
+          where: { id: postId },
+          include: {
+            author: { select: { id: true, name: true } },
+            attachments: true,
+          },
+        });
+      });
+    } catch (error) {
+      await this.cleanupFiles(files);
+      throw error;
+    }
+  }
+
+  private async cleanupFiles(files: Express.Multer.File[]) {
+    // Promise.allSettled — continue même si un unlink échoue
+    await Promise.allSettled(
+      files.map((file) => {
+        this.logger.warn(`Nettoyage du fichier orphelin : ${file.path}`);
+        return unlink(file.path);
+      }),
+    );
   }
 }

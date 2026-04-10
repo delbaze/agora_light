@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Delete,
-  Inject,
   Body,
   Param,
   Query,
@@ -11,12 +10,10 @@ import {
   UseGuards,
   DefaultValuePipe,
   UseInterceptors,
+  BadRequestException,
+  Version,
 } from '@nestjs/common';
-import {
-  CacheInterceptor,
-  CacheTTL,
-  CACHE_MANAGER,
-} from '@nestjs/cache-manager';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -24,6 +21,10 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ParseSortOrderPipe } from '../common/pipes/parse-sort-order-pipe';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { UploadedFiles } from '@nestjs/common';
+import { multerConfig } from '../common/config/multer.config';
+import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 
 @ApiTags('Posts')
 @Controller('posts')
@@ -66,6 +67,40 @@ export class PostsController {
     return this.postsService.create(dto, user.id);
   }
 
+  @Post()
+  @Version('2')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @UseInterceptors(FilesInterceptor('files', 5, multerConfig))
+  @ApiOperation({ summary: 'Créer un post avec fichiers optionnels' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        content: { type: 'string' },
+        topic: { type: 'string' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+      required: ['title', 'content'],
+    },
+  })
+  async createv2(
+    @Body() dto: CreatePostDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: { id: number },
+  ) {
+    return await this.postsService.createWithAttachments(
+      dto,
+      user.id,
+      files ?? [],
+    );
+  }
+
   @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Supprimer un post' })
@@ -74,5 +109,35 @@ export class PostsController {
     @CurrentUser() user: { id: number },
   ) {
     return this.postsService.remove(id, user.id);
+  }
+
+  @Post(':id/attachments')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @UseInterceptors(FilesInterceptor('files', 5, multerConfig))
+  @ApiOperation({
+    summary: 'Ajouter des fichiers à un post — 5 max, 5MB chacun',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  uploadAttachments(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: { id: number },
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+    return this.postsService.addAttachments(id, user.id, files);
   }
 }

@@ -11,14 +11,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   name      String
   password  String
   bio       String?
   avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   posts     Post[]
   comments  Comment[]
   following Follow[]  @relation("Follower")
@@ -34,9 +34,22 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  authorId Int
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments Comment[]
+  authorId    Int
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  attachments PostAttachment[]
+}
+
+model PostAttachment {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  url       String
+  mimetype  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  postId Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model Comment {
@@ -62,4 +75,3 @@ model Follow {
 
   @@id([followerId, followingId])
 }
-

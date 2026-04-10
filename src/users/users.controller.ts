@@ -7,7 +7,6 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  UseGuards,
   Delete,
   Version,
   Query,
@@ -28,10 +27,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Utilisateurs') // Groupe toutes les routes sous ce label
 @Controller('users')
@@ -39,6 +38,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
+  @Public()
   @ApiOperation({ summary: 'Inscrire un nouvel utilisateur' })
   @ApiResponse({ status: 201, description: 'Utilisateur créé' })
   @ApiResponse({ status: 400, description: 'Données invalides' })
@@ -78,7 +78,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Supprimer un utilisateur' })
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
@@ -87,7 +87,7 @@ export class UsersController {
   }
 
   @Post('avatar')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', multerConfig))
   @ApiOperation({ summary: 'Uploader un avatar' })
   @ApiConsumes('multipart/form-data')

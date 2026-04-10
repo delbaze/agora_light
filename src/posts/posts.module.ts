@@ -4,9 +4,10 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ReconciliationService } from './reconciliation.service';
+import { PostsMicroserviceController } from './posts.microservice.controller';
 @Module({
   imports: [NotificationsModule],
-  controllers: [PostsController],
+  controllers: [PostsController, PostsMicroserviceController],
   providers: [PostsService, ReconciliationService],
 })
 export class PostsModule {}

@@ -31,6 +31,7 @@ import {
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { SkipTransform } from 'src/common/decorators/skip-transform.decorator';
 
 @ApiTags('Utilisateurs') // Groupe toutes les routes sous ce label
 @Controller('users')
@@ -48,6 +49,7 @@ export class UsersController {
   }
 
   @Get()
+  // @SkipTransform()
   async findAll() {
     return this.usersService.findAll();
   }

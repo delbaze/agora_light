@@ -11,9 +11,11 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { HealthModule } from './health/health.module';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -53,6 +55,7 @@ import { RolesGuard } from './common/guards/roles.guard';
         port: 6379,
       },
     }),
+    HealthModule,
     PrismaModule,
     UsersModule,
     PostsModule,
@@ -60,6 +63,7 @@ import { RolesGuard } from './common/guards/roles.guard';
   ],
   controllers: [AppController],
   providers: [
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

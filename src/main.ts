@@ -6,15 +6,21 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { join } from 'path';
 import helmet from 'helmet';
+
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger:
       process.env.NODE_ENV === 'production'
         ? ['log', 'warn', 'error']
         : ['log', 'warn', 'error', 'debug', 'verbose'],
+  });
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.TCP,
+    options: { host: '0.0.0.0', port: 3001 },
   });
   app.use(
     helmet({
@@ -40,7 +46,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new AuditInterceptor(),
-    new TransformInterceptor(),
+    // new TransformInterceptor(),
   );
 
   app.useGlobalPipes(
@@ -68,7 +74,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-
+  await app.startAllMicroservices();
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

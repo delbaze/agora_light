@@ -27,4 +27,18 @@ export class NotificationsProducer {
       },
     );
   }
+  async notifyWelcome(userId: number, userName: string, userEmail: string) {
+    await this.queue.add(
+      'welcome',
+      {
+        userId,
+        userName,
+        userEmail,
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      },
+    );
+  }
 }

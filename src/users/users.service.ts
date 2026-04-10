@@ -12,6 +12,7 @@ import bcrypt from 'bcrypt';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { NotificationsProducer } from '../notifications/notifications.producer';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cache: Cache,
+    private notificationsProducer: NotificationsProducer,
   ) {}
 
   async create(data: { name: string; email: string; password: string }) {
@@ -39,7 +41,11 @@ export class UsersService {
     });
 
     this.logger.log(`Utilisateur créé avec succès — ID : ${user.id}`);
-
+    await this.notificationsProducer.notifyWelcome(
+      user.id,
+      user.name,
+      user.email,
+    );
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
 

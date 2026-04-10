@@ -13,6 +13,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../common/config/multer.config';
@@ -86,7 +87,7 @@ export class UsersController {
   }
 
   @Post('avatar')
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', multerConfig))
   @ApiOperation({ summary: 'Uploader un avatar' })
   @ApiConsumes('multipart/form-data')
@@ -101,5 +102,12 @@ export class UsersController {
   async uploadAvatar(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: { id: number },
-  ) {}
+  ) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+    const avatarUrl = `/uploads/${file.filename}`;
+    await this.usersService.update(user.id, { avatarUrl });
+    return { avatarUrl };
+  }
 }

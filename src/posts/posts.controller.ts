@@ -28,6 +28,7 @@ import { multerConfig } from '../common/config/multer.config';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Parser } from 'json2csv';
+import { Throttle } from '@nestjs/throttler';
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
@@ -84,6 +85,7 @@ export class PostsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { ttl: 10000, limit: 1 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Créer un post' })
   create(@Body() dto: CreatePostDto, @CurrentUser() user: { id: number }) {

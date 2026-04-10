@@ -10,9 +10,22 @@ import { PrismaModule } from './prisma/prisma.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'short', // 10 requêtes max par seconde
+        ttl: 1000,
+        limit: 10,
+      },
+      {
+        name: 'medium', // 100 requêtes max par minutes
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ScheduleModule.forRoot({}),
     CacheModule.register({
       isGlobal: true,
@@ -44,6 +57,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, AppService],
 })
 export class AppModule {}

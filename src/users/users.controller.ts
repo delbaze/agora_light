@@ -18,7 +18,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../common/config/multer.config';
 import { UsersService } from './users.service';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { RegisterUserDto, UpdateUserDto } from './dto';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -29,7 +29,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UpdateUserDto } from './dto/update-user.dto';
+
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
